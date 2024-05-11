@@ -11,7 +11,9 @@ import (
 	"strings"
 
 	assetfs "github.com/elazarl/go-bindata-assetfs"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/wekeeroad/GoRPC/pkg/middleware"
 	"github.com/wekeeroad/GoRPC/pkg/swagger"
 	pb "github.com/wekeeroad/GoRPC/proto"
 	"github.com/wekeeroad/GoRPC/server"
@@ -155,7 +157,15 @@ func runHttpServer() *http.ServeMux {
 }
 
 func runGrpcServer() *grpc.Server {
-	s := grpc.NewServer()
+	opts := []grpc.ServerOption{
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+			middleware.AccessLog,
+			middleware.ErrorLog,
+			middleware.Recovery,
+			middleware.ContextTimeout,
+		)),
+	}
+	s := grpc.NewServer(opts...)
 	pb.RegisterTagServiceServer(s, server.NewTagServer())
 	reflection.Register(s)
 
