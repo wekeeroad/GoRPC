@@ -33,6 +33,19 @@ type httpError struct {
 	Message string `json:"message, omitempty"`
 }
 
+type Auth struct {
+	AppKey    string
+	AppSecret string
+}
+
+func (a *Auth) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+	return map[string]string{"app_key": a.AppKey, "app_secret": a.AppSecret}, nil
+}
+
+func (a *Auth) RequireTransportSecurity() bool {
+	return false
+}
+
 func init() {
 	flag.StringVar(&grpcPort, "grpcPort", "9000", "The port of serve for gRPC")
 	flag.StringVar(&port, "port", "9003", "The port of serve for multiRoute")
@@ -177,6 +190,12 @@ func runGrpcGatwayServer() *runtime.ServeMux {
 	runtime.HTTPError = grpcGatewayError
 	gwmux := runtime.NewServeMux()
 	dopts := []grpc.DialOption{grpc.WithInsecure()}
+	// 这一部分参数需要从http1.1的request中获取，并写入到dopts中，不能如下进行硬编码。
+	auth := Auth{
+		AppKey:    "go-programming-tour-book",
+		AppSecret: "eddycjy",
+	}
+	dopts = append(dopts, grpc.WithPerRPCCredentials(&auth))
 	_ = pb.RegisterTagServiceHandlerFromEndpoint(context.Background(), gwmux, endpoint, dopts)
 
 	return gwmux

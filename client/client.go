@@ -14,6 +14,19 @@ import (
 
 var opts []grpc.DialOption
 
+type Auth struct {
+	AppKey    string
+	AppSecret string
+}
+
+func (a *Auth) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+	return map[string]string{"app_key": a.AppKey, "app_secret": a.AppSecret}, nil
+}
+
+func (a *Auth) RequireTransportSecurity() bool {
+	return false
+}
+
 func init() {
 	opts = append(opts, grpc.WithUnaryInterceptor(
 		grpc_middleware.ChainUnaryClient(
@@ -36,6 +49,11 @@ func init() {
 }
 
 func main() {
+	auth := Auth{
+		AppKey:    "go-programming-tour-book",
+		AppSecret: "eddycjy",
+	}
+	opts = append(opts, grpc.WithPerRPCCredentials(&auth))
 	ctx := context.Background()
 	clientConn, _ := GetClientConn(ctx, "localhost:9003", opts)
 	defer clientConn.Close()
