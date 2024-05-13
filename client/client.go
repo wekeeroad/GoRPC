@@ -39,6 +39,7 @@ func init() {
 				),
 			),
 			middleware.UnaryContextTimeout(),
+			middleware.ClientTracing(),
 		),
 	))
 	opts = append(opts, grpc.WithStreamInterceptor(

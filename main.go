@@ -13,8 +13,10 @@ import (
 	assetfs "github.com/elazarl/go-bindata-assetfs"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/wekeeroad/GoRPC/global"
 	"github.com/wekeeroad/GoRPC/pkg/middleware"
 	"github.com/wekeeroad/GoRPC/pkg/swagger"
+	"github.com/wekeeroad/GoRPC/pkg/tracer"
 	pb "github.com/wekeeroad/GoRPC/proto"
 	"github.com/wekeeroad/GoRPC/server"
 	"golang.org/x/net/http2"
@@ -47,6 +49,10 @@ func (a *Auth) RequireTransportSecurity() bool {
 }
 
 func init() {
+	err := setupTracer()
+	if err != nil {
+		log.Fatalf("init.setupTracer err: %v", err)
+	}
 	flag.StringVar(&grpcPort, "grpcPort", "9000", "The port of serve for gRPC")
 	flag.StringVar(&port, "port", "9003", "The port of serve for multiRoute")
 	flag.Parse()
@@ -176,6 +182,7 @@ func runGrpcServer() *grpc.Server {
 			middleware.ErrorLog,
 			middleware.Recovery,
 			middleware.ContextTimeout,
+			middleware.ServerTracing,
 		)),
 	}
 	s := grpc.NewServer(opts...)
@@ -219,4 +226,16 @@ func grpcGatewayError(ctx context.Context, _ *runtime.ServeMux, marshaler runtim
 	w.Header().Set("Content-type", marshaler.ContentType())
 	w.WriteHeader(runtime.HTTPStatusFromCode(s.Code()))
 	_, _ = w.Write(resp)
+}
+
+func setupTracer() error {
+	jaegerTracer, _, err := tracer.NewJaegerTracer(
+		"tag-service",
+		"127.0.0.1:6831",
+	)
+	if err != nil {
+		return err
+	}
+	global.Tracer = jaegerTracer
+	return nil
 }
