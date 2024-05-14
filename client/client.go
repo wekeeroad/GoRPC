@@ -6,7 +6,9 @@ import (
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
+	"github.com/wekeeroad/GoRPC/global"
 	"github.com/wekeeroad/GoRPC/pkg/middleware"
+	"github.com/wekeeroad/GoRPC/pkg/tracer"
 	pb "github.com/wekeeroad/GoRPC/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -39,7 +41,7 @@ func init() {
 				),
 			),
 			middleware.UnaryContextTimeout(),
-			middleware.ClientTracing(),
+			//middleware.ClientTracing(),
 		),
 	))
 	opts = append(opts, grpc.WithStreamInterceptor(
@@ -47,6 +49,12 @@ func init() {
 			middleware.StreamContextTimeout(),
 		),
 	))
+	/*
+		err := setupTracer()
+		if err != nil {
+			log.Fatalf("init.setupTracer err: %v", err)
+		}
+	*/
 }
 
 func main() {
@@ -69,4 +77,16 @@ func main() {
 func GetClientConn(ctx context.Context, target string, opts []grpc.DialOption) (*grpc.ClientConn, error) {
 	opts = append(opts, grpc.WithInsecure())
 	return grpc.DialContext(ctx, target, opts...)
+}
+
+func setupTracer() error {
+	jaegerTracer, _, err := tracer.NewJaegerTracer(
+		"tag-client",
+		"127.0.0.1:6831",
+	)
+	if err != nil {
+		return err
+	}
+	global.Tracer = jaegerTracer
+	return nil
 }

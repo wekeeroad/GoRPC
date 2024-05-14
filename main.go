@@ -59,36 +59,13 @@ func init() {
 }
 
 func main() {
-	go func() {
-		err := RunGrpcServerDre(grpcPort)
-		if err != nil {
-			log.Fatalf("Run RunGrpcServerDre err: %v", err)
-		}
-	}()
 	/*
-		l, err := RunTCPServer(port)
-		if err != nil {
-			log.Fatalf("Run TCP Server err: %v", err)
-		}
-
-		m := cmux.New(l)
-		grpcL := m.MatchWithWriters(
-			cmux.HTTP2MatchHeaderFieldPrefixSendSettings(
-				"content-type",
-				"application/grpc",
-			),
-		)
-		httpL := m.Match(cmux.HTTP1Fast())
-
-		grpcS := RunGrpcServer()
-		httpS := RunHttpServer(port)
-		go grpcS.Serve(grpcL)
-		go httpS.Serve(httpL)
-
-		err = m.Serve()
-		if err != nil {
-			log.Fatalf("Run Serve err: %v", err)
-		}
+		go func() {
+			err := RunGrpcServerDre(grpcPort)
+			if err != nil {
+				log.Fatalf("Run RunGrpcServerDre err: %v", err)
+			}
+		}()
 	*/
 	err := RunServer(port)
 	if err != nil {
